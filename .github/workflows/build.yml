@@ -10,36 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ ดึงโค้ด
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2️⃣ ใช้ JDK 11
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 11
 
-      # 3️⃣ ให้สิทธิ์ gradlew
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      # 4️⃣ Build Release APK
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      # 5️⃣ Rename APK เป็นชื่อมาตรฐาน
       - name: Rename APK
         run: |
-          mv app/build/outputs/apk/release/*.apk app-release.apk
+          cp app/build/outputs/apk/release/*.apk app-release.apk
 
-      # 6️⃣ Publish ไป GitHub Release
       - name: Publish APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           name: Latest Build
           files: app-release.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
