@@ -1,1 +1,1 @@
-com.example.newpackage
+com.ghfg.gnfg
