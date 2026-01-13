@@ -1,1 +1,1 @@
-com.bkg.nck
+com.example.newpackage
