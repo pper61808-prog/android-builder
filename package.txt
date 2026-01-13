@@ -1,1 +1,1 @@
-com.per.java
+com.per.test
