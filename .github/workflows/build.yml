@@ -19,46 +19,50 @@ jobs:
           distribution: temurin
           java-version: 11
 
-      - name: Grant execute permission
+      - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 🛠️ ขั้นตอนพิเศษ: ปรับแต่งโปรเจกต์ตามที่คุณกรอกมาจากแอป
-      - name: Customize Project
+      # 🛠️ ส่วนแก้ไขชื่อแอปและย้ายโฟลเดอร์แพ็กเกจ
+      - name: Customize App and Package
         run: |
-          # 1. เปลี่ยนชื่อแอปใน strings.xml
+          # 1. แก้ไขชื่อแอป
           if [ -f app_name.txt ]; then
             APP_NAME=$(cat app_name.txt)
             sed -i "s|<string name=\"app_name\">.*</string>|<string name=\"app_name\">$APP_NAME</string>|g" app/src/main/res/values/strings.xml
           fi
           
-          # 2. เปลี่ยน Package Name และย้ายโฟลเดอร์ Java
+          # 2. แก้ไข Package Name และย้ายโฟลเดอร์ไฟล์ Java
           if [ -f package.txt ]; then
             NEW_PKG=$(cat package.txt)
-            OLD_PKG=$(grep "applicationId" app/build.gradle | sed 's/.*applicationId "\(.*\)".*/\1/')
+            echo "Setting package to: $NEW_PKG"
             
-            # แก้ไข build.gradle
+            # แก้ไข build.gradle และ AndroidManifest.xml
             sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/" app/build.gradle
-            
-            # แก้ไข AndroidManifest.xml
             sed -i "s/package=\".*\"/package=\"$NEW_PKG\"/" app/src/main/AndroidManifest.xml
             
-            # ย้ายไฟล์ Java ไปยังโครงสร้างโฟลเดอร์ใหม่ (เพื่อแก้ปัญหาแพ็กเกจไม่ถูกต้อง)
+            # ย้ายโฟลเดอร์ Java เพื่อแก้ปัญหา "แพ็กเกจไม่ถูกต้อง"
             NEW_PATH=$(echo $NEW_PKG | tr '.' '/')
             mkdir -p app/src/main/java/$NEW_PATH
-            # ค้นหาไฟล์ Java ทั้งหมดและเปลี่ยนบรรทัด package ในไฟล์
+            
+            # ค้นหาและเปลี่ยนบรรทัด package ในไฟล์ .java ทั้งหมด
             find app/src/main/java -name "*.java" -exec sed -i "s/package .*;/package $NEW_PKG;/" {} +
-            # ย้ายไฟล์ทั้งหมดไปที่ path ใหม่
-            find app/src/main/java -name "*.java" -exec mv {} app/src/main/java/$NEW_PATH/ \;
+            # ย้ายไฟล์ไปที่ Path ใหม่
+            find app/src/main/java -name "*.java" -type f -exec mv {} app/src/main/java/$NEW_PATH/ \;
           fi
 
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      - name: Publish APK to GitHub Release
+      - name: Rename and Prepare APK
+        run: |
+          find app/build/outputs/apk/release/ -name "*.apk" -exec mv {} app-release.apk \;
+
+      - name: Publish to Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Android Build ${{ github.run_number }}
-          files: app/build/outputs/apk/release/*.apk
+          tag_name: latest
+          name: Latest Cloud Build
+          files: app-release.apk
+          force_update: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
