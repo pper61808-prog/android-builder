@@ -1,40 +1,35 @@
-name: Android Build APK
+name: Android Debug Build APK
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 11
+      - name: ☕ Set up JDK 17 (REQUIRED)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
-      - name: Grant execute permission
-        run: chmod +x ./gradlew
+      - name: 📦 Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
+      - name: 🔓 Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Rename APK
-        run: cp app/build/outputs/apk/release/*.apk app-release.apk
+      - name: 🛠 Build Debug APK
+        run: ./gradlew assembleDebug
 
-      - name: Publish APK to GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Android Build ${{ github.run_number }}
-          files: app-release.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
