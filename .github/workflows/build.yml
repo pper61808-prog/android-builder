@@ -3,31 +3,43 @@ name: Android Build APK
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # แก้ปัญหา Error 403 ในการสร้าง Release
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: set up JDK 17
+    steps:
+      # 1️⃣ ดึงโค้ด
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ ใช้ JDK 11
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
+          java-version: 11
 
+      # 3️⃣ ให้สิทธิ์ gradlew
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew # ป้องกัน Error Permission Denied
+        run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease # สั่งสร้างไฟล์ APK
+      # 4️⃣ Build Release APK
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
 
-      - name: Create Release
+      # 5️⃣ Rename APK เป็นชื่อมาตรฐาน
+      - name: Rename APK
+        run: |
+          mv app/build/outputs/apk/release/*.apk app-release.apk
+
+      # 6️⃣ Publish ไป GitHub Release
+      - name: Publish APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.run_number }}
-          files: app/build/outputs/apk/release/*.apk
+          tag_name: latest
+          name: Latest Build
+          files: app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
